@@ -71,6 +71,17 @@ kyc-quality-detector/
    PORT=5000
    MONGODB_URI=mongodb://127.0.0.1:27017/smart-kyc-assistant
    CLIENT_URL=http://localhost:5173
+   JWT_SECRET=hahahahahaha
+   CLOUDINARY_CLOUD_NAME=...
+   CLOUDINARY_API_KEY=....
+   CLOUDINARY_API_SECRET=......
+
+   ```
+
+      Create `client/.env` from the example:
+
+   ```env
+   VITE_API_BASE_URL=http://localhost:5000/api
    ```
 
 4. **Start MongoDB**:
