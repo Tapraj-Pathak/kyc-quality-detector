@@ -5,7 +5,7 @@ import app from "./app.js";
 dotenv.config();
 
 const port = process.env.PORT || 5000;
-const mongoUri = process.env.MONGODB_URI;
+const mongoUri = process.env.MONGODB_URI || "mongodb://localhost:27017/esewa";
 
 async function startServer() {
   if (!mongoUri) {
