@@ -88,9 +88,10 @@ function CameraFeed({ capture, isUploadingCapture, onCapture, onRetake, onQualit
   const canvasRef = useRef(null);
   const [quality, setQuality] = useState(initialQuality);
   const [hasCameraError, setHasCameraError] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   useEffect(() => {
-    if (capture) {
+    if (capture || !isCameraOpen) {
       return undefined;
     }
 
@@ -189,7 +190,7 @@ function CameraFeed({ capture, isUploadingCapture, onCapture, onRetake, onQualit
     }, 400);
 
     return () => window.clearInterval(intervalId);
-  }, [capture, onQualityChange]);
+  }, [capture, isCameraOpen, onQualityChange]);
 
   const handleCapture = () => {
     const imageSrc = webcamRef.current?.getScreenshot();
@@ -223,12 +224,14 @@ function CameraFeed({ capture, isUploadingCapture, onCapture, onRetake, onQualit
               Capture first, then review the uploaded preview and retake if needed.
             </p>
           </div>
-          <div className="rounded-2xl border border-brand/10 bg-brand-soft px-3 py-2 text-center text-brand-dark">
-            <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-brand/60">
-              Quality
-            </p>
-            <p className="mt-1 text-lg font-semibold">{capture?.score ?? quality.score}%</p>
-          </div>
+          {isCameraOpen || capture ? (
+            <div className="rounded-2xl border border-brand/10 bg-brand-soft px-3 py-2 text-center text-brand-dark">
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-brand/60">
+                Quality
+              </p>
+              <p className="mt-1 text-lg font-semibold">{capture?.score ?? quality.score}%</p>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -241,7 +244,7 @@ function CameraFeed({ capture, isUploadingCapture, onCapture, onRetake, onQualit
                 alt="Captured document preview"
                 className="aspect-[3/4] w-full object-cover sm:aspect-[4/5]"
               />
-            ) : (
+            ) : isCameraOpen ? (
               <>
                 <Webcam
                   ref={webcamRef}
@@ -254,6 +257,8 @@ function CameraFeed({ capture, isUploadingCapture, onCapture, onRetake, onQualit
                 />
                 <OverlayGuide />
               </>
+              ) : (
+              <div className="aspect-[3/4] w-full bg-slate-900 sm:aspect-[4/5]" />
             )}
           </div>
         </div>
@@ -266,31 +271,35 @@ function CameraFeed({ capture, isUploadingCapture, onCapture, onRetake, onQualit
           </div>
         ) : null}
 
-        <FeedbackMessage
-          message={capture ? "Capture uploaded successfully" : quality.message}
-          status={capture ? "success" : quality.status}
-          score={capture?.score ?? quality.score}
-        />
+          {isCameraOpen || capture ? (
+          <FeedbackMessage
+            message={capture ? "Capture uploaded successfully" : quality.message}
+            status={capture ? "success" : quality.status}
+            score={capture?.score ?? quality.score}
+          />
+        ) : null}
 
-        <div className="section-card p-3">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-                Live metrics
-              </p>
-              <p className="mt-1 text-sm text-slate-500">Realtime signal health for this capture.</p>
+        {isCameraOpen || capture ? (
+          <div className="section-card p-3">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                  Live metrics
+                </p>
+                <p className="mt-1 text-sm text-slate-500">Realtime signal health for this capture.</p>
+              </div>
+              <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                {capture ? "Preview locked" : "Updates every 400ms"}
+              </div>
             </div>
-            <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-              {capture ? "Preview locked" : "Updates every 400ms"}
-            </div>
-          </div>
 
           <div className="grid grid-cols-3 gap-3 text-left">
-            <MetricCard label="Sharpness" value={Math.round(capture?.meta?.blurVariance ?? quality.blurVariance)} />
-            <MetricCard label="Brightness" value={Math.round(capture?.meta?.brightness ?? quality.brightness)} />
-            <MetricCard label="Capture" value={capture ? "Uploaded" : quality.canCapture ? "Ready" : "Hold"} />
+              <MetricCard label="Sharpness" value={Math.round(capture?.meta?.blurVariance ?? quality.blurVariance)} />
+              <MetricCard label="Brightness" value={Math.round(capture?.meta?.brightness ?? quality.brightness)} />
+              <MetricCard label="Capture" value={capture ? "Uploaded" : quality.canCapture ? "Ready" : "Hold"} />
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {capture ? (
           <button
@@ -299,6 +308,14 @@ function CameraFeed({ capture, isUploadingCapture, onCapture, onRetake, onQualit
             className="w-full rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-base font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Retake capture
+          </button>
+          ) : !isCameraOpen ? (
+          <button
+            type="button"
+            onClick={() => setIsCameraOpen(true)}
+            className="w-full rounded-[22px] border-2 border-brand bg-brand px-4 py-4 text-base font-semibold text-white transition hover:bg-brand-dark"
+          >
+            Open Camera
           </button>
         ) : (
           <CaptureButton disabled={!quality.canCapture || isUploadingCapture} onClick={handleCapture} />
