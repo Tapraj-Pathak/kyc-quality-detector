@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import ApplicantForm from "./components/ApplicantForm";
 import CameraFeed, { initialQuality } from "./components/CameraFeed";
-import PreviewModal from "./components/PreviewModal";
 import ReviewChecklist from "./components/ReviewChecklist";
 import StatusOverview from "./components/StatusOverview";
 import SubmissionHistory from "./components/SubmissionHistory";
 import ToastMessage from "./components/ToastMessage";
-import { createSubmission, fetchDashboardData } from "./lib/api";
+import { createSubmission, fetchDashboardData, uploadCapture } from "./lib/api";
 
 const initialForm = {
   applicantName: "",
@@ -32,6 +31,7 @@ function App() {
   const [submissions, setSubmissions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingCapture, setIsUploadingCapture] = useState(false);
   const [toast, setToast] = useState(null);
 
   const todayLabel = useMemo(() => {
@@ -80,13 +80,37 @@ function App() {
     }));
   }
 
+  async function handleCapture(nextCapture) {
+    try {
+      setIsUploadingCapture(true);
+      const uploaded = await uploadCapture({ imageSrc: nextCapture.imageSrc });
+      setCapture({
+        ...nextCapture,
+        previewSrc: nextCapture.imageSrc,
+        imageUrl: uploaded.imageUrl,
+        publicId: uploaded.publicId,
+      });
+      setToast({
+        title: "Capture uploaded",
+        message: "The image has been uploaded and is ready for form submission.",
+      });
+    } catch (error) {
+      setToast({
+        title: "Upload failed",
+        message: error.message,
+      });
+    } finally {
+      setIsUploadingCapture(false);
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (!capture) {
+    if (!capture?.imageUrl || !capture?.publicId) {
       setToast({
         title: "Capture required",
-        message: "Please take a document capture before saving the submission.",
+        message: "Please capture and upload a document image before saving the submission.",
       });
       return;
     }
@@ -97,7 +121,8 @@ function App() {
       await createSubmission({
         ...form,
         capture: {
-          imageSrc: capture.imageSrc,
+          imageUrl: capture.imageUrl,
+          publicId: capture.publicId,
           qualityScore: capture.score,
           statusMessage: capture.status,
           statusTone: capture.statusTone,
@@ -108,7 +133,7 @@ function App() {
 
       setToast({
         title: "Submission saved",
-        message: "The KYC packet has been added to the review queue.",
+        message: "The form and uploaded capture have been stored in the database.",
       });
       setForm(initialForm);
       setCapture(null);
@@ -124,7 +149,7 @@ function App() {
   }
 
   const canSubmit =
-    Boolean(capture) &&
+    Boolean(capture?.imageUrl) &&
     Boolean(form.applicantName) &&
     Boolean(form.phoneNumber) &&
     Boolean(form.documentType) &&
@@ -156,7 +181,7 @@ function App() {
             </div>
           </div>
           <p className="relative mt-4 max-w-xl text-sm leading-6 text-white/80">
-            Capture, validate, and store KYC records with live camera quality signals and a reviewer-ready submission queue.
+            Capture, upload, preview, retake, and then submit the KYC form into the database.
           </p>
 
           <div className="relative mt-5 grid grid-cols-3 gap-2 md:max-w-md">
@@ -173,16 +198,22 @@ function App() {
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-brand/55">
               Capture workspace
             </p>
-            <h2 className="mt-1 text-base font-semibold text-ink">End-to-end KYC submission flow</h2>
+            <h2 className="mt-1 text-base font-semibold text-ink">Capture, preview, retake, and submit</h2>
           </div>
           <div className="rounded-full border border-brand/10 bg-brand-soft px-3 py-1.5 text-xs font-semibold text-brand-dark">
-            {capture ? "Capture ready" : "Awaiting capture"}
+            {capture ? "Preview ready" : "Awaiting capture"}
           </div>
         </section>
 
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-4">
-            <CameraFeed onCapture={setCapture} onQualityChange={setQuality} />
+            <CameraFeed
+              capture={capture}
+              isUploadingCapture={isUploadingCapture}
+              onCapture={handleCapture}
+              onRetake={() => setCapture(null)}
+              onQualityChange={setQuality}
+            />
             <SubmissionHistory submissions={submissions} />
           </div>
 
@@ -193,14 +224,13 @@ function App() {
               onSubmit={handleSubmit}
               isSaving={isSaving}
               canSubmit={canSubmit}
-              hasCapture={Boolean(capture)}
+              hasCapture={Boolean(capture?.imageUrl)}
             />
-            <ReviewChecklist quality={quality} hasCapture={Boolean(capture)} />
+            <ReviewChecklist quality={capture ? { ...quality, blurVariance: capture.meta.blurVariance, brightness: capture.meta.brightness, score: capture.score } : quality} hasCapture={Boolean(capture?.imageUrl)} />
           </div>
         </div>
       </div>
 
-      <PreviewModal capture={capture} onClose={() => setCapture(null)} />
       <ToastMessage toast={toast} onClose={() => setToast(null)} />
     </main>
   );

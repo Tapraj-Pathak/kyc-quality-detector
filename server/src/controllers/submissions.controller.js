@@ -1,4 +1,16 @@
 import KycSubmission from "../models/KycSubmission.js";
+import { uploadCaptureImage } from "../services/cloudinary.service.js";
+
+export async function uploadCapture(req, res) {
+  const { imageSrc } = req.body;
+
+  if (!imageSrc) {
+    return res.status(400).json({ message: "Image capture is required." });
+  }
+
+  const uploadedImage = await uploadCaptureImage(imageSrc);
+  return res.status(201).json(uploadedImage);
+}
 
 export async function listSubmissions(_req, res) {
   const submissions = await KycSubmission.find(
@@ -11,6 +23,7 @@ export async function listSubmissions(_req, res) {
       reviewStatus: 1,
       createdAt: 1,
       "capture.qualityScore": 1,
+      "capture.imageUrl": 1,
     },
   )
     .sort({ createdAt: -1 })
@@ -64,10 +77,11 @@ export async function createSubmission(req, res) {
     !documentType ||
     !documentNumber ||
     !branch ||
-    !capture?.imageSrc
+    !capture?.imageUrl ||
+    !capture?.publicId
   ) {
     return res.status(400).json({
-      message: "Applicant details and a valid capture are required.",
+      message: "Applicant details and an uploaded capture are required.",
     });
   }
 
@@ -91,7 +105,8 @@ export async function createSubmission(req, res) {
     notes,
     reviewSummary,
     capture: {
-      imageSrc: capture.imageSrc,
+      imageUrl: capture.imageUrl,
+      publicId: capture.publicId,
       qualityScore: capture.qualityScore,
       statusMessage: capture.statusMessage,
       statusTone: capture.statusTone,

@@ -26,6 +26,18 @@ export async function fetchDashboardData() {
   return { health, stats, submissions };
 }
 
+export async function uploadCapture(payload) {
+  const response = await fetch(`${API_BASE_URL}/submissions/upload-capture`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseResponse(response);
+}
+
 export async function createSubmission(payload) {
   const response = await fetch(`${API_BASE_URL}/submissions`, {
     method: "POST",

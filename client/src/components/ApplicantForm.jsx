@@ -62,7 +62,7 @@ function ApplicantForm({ form, onChange, onSubmit, isSaving, canSubmit, hasCaptu
               Capture state
             </p>
             <p className="mt-1 text-sm font-semibold text-brand-dark">
-              {hasCapture ? "Capture attached" : "Waiting for capture"}
+              {hasCapture ? "Capture uploaded and ready" : "Waiting for capture"}
             </p>
           </div>
         </div>
@@ -88,7 +88,7 @@ function ApplicantForm({ form, onChange, onSubmit, isSaving, canSubmit, hasCaptu
               : "bg-brand text-white shadow-glow hover:bg-brand-dark"
           }`}
         >
-          {isSaving ? "Saving submission..." : "Save KYC submission"}
+          {isSaving ? "Saving submission to database..." : "Save KYC submission"}
         </button>
       </form>
     </section>

@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 
 const captureSchema = new mongoose.Schema(
   {
-    imageSrc: { type: String, required: true },
+    imageUrl: { type: String, required: true },
+    publicId: { type: String, required: true },
     qualityScore: { type: Number, required: true, min: 0, max: 100 },
     statusMessage: { type: String, required: true },
     statusTone: {
