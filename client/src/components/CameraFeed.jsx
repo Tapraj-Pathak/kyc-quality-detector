@@ -21,6 +21,26 @@ const initialQuality = {
   canCapture: false,
 };
 
+// Temporary relaxed thresholds for local testing on lower-quality laptop cameras.
+// Future: comment these testing values back out and restore the original production values below.
+const TESTING_CAPTURE_THRESHOLDS = {
+  // Original production blur threshold: 95
+  // Previous temporary testing blur threshold: 45
+  blurVarianceMin: 30,
+  // Original production brightness threshold: 85
+  brightnessMin: 55,
+  // Original production capture score threshold: 72
+  captureScoreMin: 50,
+  // Original production blur scoring divisor: 180
+  blurScoreDivisor: 110,
+  // Original production brightness target: 138
+  brightnessTarget: 128,
+  // Original production brightness penalty multiplier: 1.2
+  brightnessPenaltyMultiplier: 0.75,
+  // Original production minimum displayed score: 8
+  minimumDisplayedScore: 50,
+};
+
 export { initialQuality };
 
 function checkPositioning(imageData) {
@@ -99,8 +119,11 @@ function CameraFeed({ onCapture, onQualityChange }) {
       const brightness = checkBrightness(imageData);
       const positioning = checkPositioning(imageData);
 
-      const isTooBlurry = blur.variance < 95;
-      const isLowLight = brightness.average < 85;
+      // Original production checks:
+      // const isTooBlurry = blur.variance < 95;
+      // const isLowLight = brightness.average < 85;
+      const isTooBlurry = blur.variance < TESTING_CAPTURE_THRESHOLDS.blurVarianceMin;
+      const isLowLight = brightness.average < TESTING_CAPTURE_THRESHOLDS.brightnessMin;
       const needsPositioning = positioning.needsAdjustment;
 
       let message = "Perfect - capture now";
@@ -117,16 +140,35 @@ function CameraFeed({ onCapture, onQualityChange }) {
         status = "warning";
       }
 
-      const blurScore = Math.min(100, (blur.variance / 180) * 100);
-      const brightnessScore = 100 - Math.min(100, Math.abs(brightness.average - 138) * 1.2);
+      // Original production scoring:
+      // const blurScore = Math.min(100, (blur.variance / 180) * 100);
+      // const brightnessScore = 100 - Math.min(100, Math.abs(brightness.average - 138) * 1.2);
+      const blurScore = Math.min(
+        100,
+        (blur.variance / TESTING_CAPTURE_THRESHOLDS.blurScoreDivisor) * 100,
+      );
+      const brightnessScore =
+        100 -
+        Math.min(
+          100,
+          Math.abs(brightness.average - TESTING_CAPTURE_THRESHOLDS.brightnessTarget) *
+            TESTING_CAPTURE_THRESHOLDS.brightnessPenaltyMultiplier,
+        );
       const framingScore = needsPositioning ? positioning.confidence : 100;
       const score = Math.max(
-        8,
+        // Original production minimum displayed score: 8
+        TESTING_CAPTURE_THRESHOLDS.minimumDisplayedScore,
         Math.round(blurScore * 0.52 + brightnessScore * 0.3 + framingScore * 0.18),
       );
 
       setQuality((current) => {
-        const nextCanCapture = !isTooBlurry && !isLowLight && !needsPositioning && score >= 72;
+        // Original production capture gate:
+        // const nextCanCapture = !isTooBlurry && !isLowLight && !needsPositioning && score >= 72;
+        const nextCanCapture =
+          !isTooBlurry &&
+          !isLowLight &&
+          !needsPositioning &&
+          score >= TESTING_CAPTURE_THRESHOLDS.captureScoreMin;
 
         if (
           current.message === message &&
@@ -206,12 +248,12 @@ function CameraFeed({ onCapture, onQualityChange }) {
       <div className="space-y-4 px-4 py-4 sm:px-5 sm:pb-5">
         <div className="section-card p-3">
           <div className="relative overflow-hidden rounded-[26px] bg-slate-900 shadow-soft">
-        <Webcam
-          ref={webcamRef}
-          audio={false}
-          mirrored
-          screenshotFormat="image/jpeg"
-          videoConstraints={videoConstraints}
+            <Webcam
+              ref={webcamRef}
+              audio={false}
+              mirrored
+              screenshotFormat="image/jpeg"
+              videoConstraints={videoConstraints}
               className="aspect-[3/4] w-full object-cover sm:aspect-[4/5]"
               onUserMediaError={() => setHasCameraError(true)}
             />

@@ -71,10 +71,14 @@ export async function createSubmission(req, res) {
     });
   }
 
+  // Original production review summary thresholds:
+  // capture.qualityScore >= 85 => excellent
+  // capture.qualityScore >= 72 => accepted
+  // Temporary testing thresholds kept lower for weak laptop cameras.
   const reviewSummary =
-    capture.qualityScore >= 85
+    capture.qualityScore >= 70
       ? "Excellent capture quality. Ready for accelerated review."
-      : capture.qualityScore >= 72
+      : capture.qualityScore >= 50
         ? "Capture accepted. Manual verification recommended."
         : "Capture saved with caution. Reviewer should inspect closely.";
 

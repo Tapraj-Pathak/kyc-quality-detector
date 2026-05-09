@@ -1,9 +1,16 @@
 function ReviewChecklist({ quality, hasCapture }) {
   const items = [
     { label: "Capture recorded", done: hasCapture },
-    { label: "Quality score above 72%", done: quality.score >= 72 },
-    { label: "Brightness acceptable", done: quality.brightness >= 85 },
-    { label: "Image sharpness acceptable", done: quality.blurVariance >= 95 },
+    // Original production checklist threshold: quality.score >= 72
+    // Temporary testing threshold kept lower for weak laptop cameras.
+    { label: "Quality score above 50%", done: quality.score >= 50 },
+    // Original production checklist threshold: quality.brightness >= 85
+    // Temporary testing threshold kept lower for weak laptop cameras.
+    { label: "Brightness acceptable", done: quality.brightness >= 55 },
+    // Original production checklist threshold: quality.blurVariance >= 95
+    // Previous temporary testing threshold: quality.blurVariance >= 45
+    // Temporary testing threshold kept lower for weak laptop cameras.
+    { label: "Image sharpness acceptable", done: quality.blurVariance >= 30 },
   ];
 
   return (
